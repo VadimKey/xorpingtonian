@@ -2,17 +2,30 @@
 <html>
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
   <title>Xorpingtonian</title>
   <style>
-    body { font-family: Arial; max-width: 700px; margin: auto; }
+    body {
+        font-family: Arial;
+        max-width: 700px;
+        margin: auto;
+        padding: 0 10px;
+    }
+    
     .emoji { cursor: pointer; font-size: 22px; margin: 5px; }
     .emoji.active {
         background: #ddd;
         border-radius: 6px;
         padding: 2px 6px;
+        transform: scale(1.2)
     }
-    .post { border-bottom: 1px solid #ddd; padding: 10px 0; }
-    #filters { line-height: 2.2em; }
+    .post { border-bottom: 1px solid #ddd; padding: 14px 0; }
+
+    #filters {
+        line-height: 2.2em;
+        word-wrap: break-word;
+    }
 
     #resetBtn {
         margin-bottom: 10px;
@@ -29,6 +42,39 @@
         background: #eee;
         border-radius: 4px;
     }
+
+    @media (max-width: 600px) {
+
+  body {
+    max-width: 100%;
+    padding: 0 12px;   /* small side spacing */
+  }
+
+  h1 {
+    font-size: 22px;
+  }
+
+  .post {
+    font-size: 18px;   /* bigger readable text */
+  }
+
+  .emoji {
+    font-size: 26px !important;  /* override bucket sizes */
+    margin: 6px;
+  }
+
+  .post-emoji {
+    font-size: 22px;
+  }
+
+  #resetBtn {
+    width: 100%;
+    font-size: 18px;
+    padding: 10px;
+    margin-bottom: 12px;
+  }
+
+}
   </style>
 </head>
 <body>
