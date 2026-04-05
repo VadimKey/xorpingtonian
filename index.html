@@ -93,7 +93,7 @@ const emojiTooltips = {
     "🇬🇧": "UK related topics",
     "🥾": "Hiking",
     "🛠": "DIY",
-    "🧑‍💻": "Programming",
+    "💻": "Programming",
     "🇫🇷": "France and French language",
     "🎥": "Movies watched",
     "🔈": "Podcasts listened",
@@ -221,6 +221,7 @@ function renderFilters() {
 
     emojis.forEach(([emoji, count], index) => {
         if (count < 3) return;
+        if (emoji == "🧑") return;
 
         const span = document.createElement('span');
         span.textContent = `${emoji}`;
