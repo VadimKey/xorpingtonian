@@ -6,53 +6,203 @@
   <style>
     body { font-family: Arial; max-width: 700px; margin: auto; }
     .emoji { cursor: pointer; font-size: 22px; margin: 5px; }
-    .emoji.active { background: #eee; border-radius: 5px; }
+    .emoji.active {
+        background: #ddd;
+        border-radius: 6px;
+        padding: 2px 6px;
+    }
     .post { border-bottom: 1px solid #ddd; padding: 10px 0; }
+    #filters { line-height: 2.2em; }
+
+    #resetBtn {
+        margin-bottom: 10px;
+        padding: 5px 10px;
+        cursor: pointer;
+    }
+
+    .post-emoji {
+        cursor: pointer;
+        margin-right: 5px;
+    }
+
+    .post-emoji:hover {
+        background: #eee;
+        border-radius: 4px;
+    }
   </style>
 </head>
 <body>
 
   <h1>Xorpingtonian</h1>
-  <h3>The mirror of Telegram Channel</h3>
-  <a href="https://t.me/xorping">Open in Telegram</a>
+  <h4>The <a href="https://t.me/xorping">Telegram channel</a> mirror</h4>
 
-<div id="filters"></div>
-<div id="posts"></div>
+  <h2>Topics</h2>
+  <div id="filters"></div>
+  <button id="resetBtn">Reset</button>
+  <h2>Posts</h2>
+  <div id="posts"></div>
 
 <script>
+const emojiTooltips = {
+    "🇬🇧": "UK related topics",
+    "🥾": "Hiking",
+    "🛠": "DIY",
+    "🧑‍💻": "Programming",
+    "🇫🇷": "France and French language",
+    "🎥": "Movies watched",
+    "🔈": "Podcasts listened",
+    "🏴󠁧󠁢󠁥󠁮󠁧󠁿": "England",
+    "🎿": "Skiing (Nordic)",
+    "🍇": "Vine growing",
+    "🍎": "Apples growing",
+    "🇪🇪": "Estonia",
+    "📚": "Books review",
+    "🇷🇺": "Russia related",
+    "🎹": "Piano"
+};
+
 let allPosts = [];
 let activeFilters = new Set();
 
-fetch('posts.json')
+  fetch('posts.json')
   .then(res => res.json())
   .then(data => {
-    allPosts = data.sort((a,b) => new Date(b.date) - new Date(a.date));
-    renderFilters();
+    allPosts = data.posts.sort(
+      (a, b) => new Date(b.date) - new Date(a.date)
+    );
+
+      renderFilters();
+
+      // Apply URL filters AFTER filters are rendered
+      const initialFilters = getFiltersFromURL();
+      initialFilters.forEach(emoji => {
+      activeFilters.add(emoji);
+
+      // highlight matching filter element
+      const el = [...document.querySelectorAll('.emoji')]
+        .find(e => e.textContent.startsWith(emoji));
+
+      if (el) el.classList.add('active');
+    });
+
     renderPosts();
   });
 
+document.getElementById('resetBtn').onclick = () => {
+  activeFilters.clear();
+
+  // remove highlight from all emojis
+  document.querySelectorAll('.emoji').forEach(e =>
+    e.classList.remove('active')
+  );
+
+  updateURL();
+  renderPosts();
+};
+
+function getFiltersFromURL() {
+  const params = new URLSearchParams(window.location.search);
+  const tags = params.get('tags');
+  return tags ? tags.split(',') : [];
+}
+
+function updateURL() {
+  const params = new URLSearchParams();
+
+  if (activeFilters.size > 0) {
+    params.set('tags', [...activeFilters].join(','));
+  }
+
+  const newUrl = window.location.pathname +
+    (params.toString() ? '?' + params.toString() : '');
+
+  window.history.replaceState({}, '', newUrl);
+}
+
+function toggleFilter(emoji, element = null) {
+  if (activeFilters.has(emoji)) {
+    activeFilters.delete(emoji);
+    if (element) element.classList.remove('active');
+  } else {
+    activeFilters.add(emoji);
+    if (element) element.classList.add('active');
+  }
+
+  updateURL();
+  renderPosts();
+}
+ 
+function toggleFilterOld(emoji, element = null) {
+  if (activeFilters.has(emoji)) {
+    activeFilters.delete(emoji);
+    if (element) element.classList.remove('active');
+  } else {
+    activeFilters.add(emoji);
+    if (element) element.classList.add('active');
+  }
+
+  renderPosts();
+}
+
 function renderFilters() {
-  const emojis = [...new Set(allPosts.flatMap(p => p.emojis))];
+  const freq = {};
+
+  // count frequency
+  allPosts.forEach(p => {
+    p.emojis.forEach(e => {
+      freq[e] = (freq[e] || 0) + 1;
+    });
+  });
+
+  const counts = Object.values(freq);
+  const max = Math.max(...counts);
+  const min = Math.min(...counts);
+
+  function getSize(count) {
+    const normalized = (count - min) / (max - min || 1);
+
+    if (normalized > 0.75) return '48px';
+    if (normalized > 0.50) return '32px';
+    return '16px';
+  }
+
+  // convert to array and sort
+  const emojis = Object.entries(freq)
+    .sort((a, b) => b[1] - a[1]); // descending
+
   const container = document.getElementById('filters');
   container.innerHTML = '';
 
-  emojis.forEach(e => {
-    const span = document.createElement('span');
-    span.textContent = e;
-    span.className = 'emoji';
+    emojis.forEach(([emoji, count], index) => {
+        if (count < 3) return;
 
-    span.onclick = () => {
-      if (activeFilters.has(e)) {
-        activeFilters.delete(e);
+        const span = document.createElement('span');
+        span.textContent = `${emoji}`;
+        span.className = 'emoji';
+        span.style.fontSize = getSize(count);
+        span.onclick = () => toggleFilter(emoji, span);
+
+        if (emojiTooltips[emoji]) {
+            span.title = `${emojiTooltips[emoji]} (${count})`;
+        }
+        else {
+            span.title = `${count} posts`;
+        }
+        container.appendChild(span);
+
+      /*
+  {
+      if (activeFilters.has(emoji)) {
+        activeFilters.delete(emoji);
         span.classList.remove('active');
       } else {
-        activeFilters.add(e);
+        activeFilters.add(emoji);
         span.classList.add('active');
       }
       renderPosts();
-    };
+      };
+      */
 
-    container.appendChild(span);
   });
 }
 
@@ -69,9 +219,50 @@ function renderPosts() {
   posts.forEach(p => {
     const div = document.createElement('div');
     div.className = 'post';
+
+    // render emojis as clickable
+    const emojiHtml = p.emojis.map(e =>
+      `<span class="post-emoji" data-emoji="${e}">${e}</span>`
+    ).join(' ');
+
     div.innerHTML = `
       <div>${p.text}</div>
-      <small>${p.date}</small>
+      <div>${emojiHtml}&ndash; <small><a href="${p.url}" title="Open in Telegram" target="_blank">${p.date}</a></small><br>
+    `;
+
+    container.appendChild(div);
+  });
+
+  // attach click handlers AFTER render
+  document.querySelectorAll('.post-emoji').forEach(el => {
+    el.onclick = () => {
+      const emoji = el.dataset.emoji;
+
+      // also highlight in filter bar if exists
+      const filterEl = [...document.querySelectorAll('.emoji')]
+        .find(e => e.textContent.startsWith(emoji));
+
+      toggleFilter(emoji, filterEl);
+    };
+  });
+}
+
+function renderPostsOld() {
+  const container = document.getElementById('posts');
+  container.innerHTML = '';
+
+  const posts = activeFilters.size === 0
+    ? allPosts
+    : allPosts.filter(p =>
+        [...activeFilters].every(f => p.emojis.includes(f))
+      );
+
+  posts.forEach(p => {
+    const div = document.createElement('div');
+    div.className = 'post';
+    div.innerHTML = `
+      <div>${p.text}</div>
+      <small>&mdash; <a href="${p.url}" target="_blank">${p.date}</a></small>
     `;
     container.appendChild(div);
   });

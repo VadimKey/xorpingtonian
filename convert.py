@@ -1,9 +1,11 @@
-import json, sys
-import re
-from datetime import datetime
+import json
+import re, sys
+from collections import Counter
 
 EMOJI_REGEX = re.compile(
-    "[\U0001F300-\U0001FAFF\U00002700-\U000027BF]+",
+    "[\U0001F1E6-\U0001F1FF]{2}|"  # flags
+    "[\U0001F300-\U0001FAFF]|"
+    "[\U00002700-\U000027BF]",
     flags=re.UNICODE
 )
 
@@ -12,10 +14,13 @@ def extract_emojis(text):
 
 src = sys.argv[1]
 
+CHANNEL = "xorping"
+
 with open(src, "r", encoding="utf-8") as f:
     data = json.load(f)
 
 posts = []
+emoji_counter = Counter()
 
 for msg in data["messages"]:
     if msg.get("type") != "message":
@@ -23,26 +28,60 @@ for msg in data["messages"]:
 
     text = msg.get("text", "")
 
-    # Telegram sometimes stores text as list (formatted)
     if isinstance(text, list):
-        text = "".join(part if isinstance(part, str) else part.get("text", "") for part in text)
-
-    emojis = extract_emojis(text)
+        text = "".join(
+            part if isinstance(part, str) else part.get("text", "")
+            for part in text
+        )
 
     if not text.strip():
         continue
 
+    emojis = extract_emojis(text)
+
+    for e in emojis:
+        emoji_counter[e] += 1
+
     posts.append({
         "id": msg["id"],
-        "date": msg["date"][:10],  # YYYY-MM-DD
+        "date": msg["date"][:10],
         "text": text,
-        "emojis": emojis
+        "emojis": emojis,
+        "url": f"https://t.me/{CHANNEL}/{msg['id']}"
     })
 
-# sort newest first
-posts.sort(key=lambda x: x["date"], reverse=True)
+# ---- create emoji metadata ----
+
+emoji_stats = []
+max_freq = max(emoji_counter.values(), default=1)
+
+for emoji, count in emoji_counter.items():
+    ratio = count / max_freq
+
+    if ratio > 0.66:
+        size = "large"
+    elif ratio > 0.33:
+        size = "medium"
+    else:
+        size = "small"
+
+    emoji_stats.append({
+        "emoji": emoji,
+        "count": count,
+        "size": size
+    })
+
+# sort by frequency DESC
+emoji_stats.sort(key=lambda x: x["count"], reverse=True)
+
+# ---- final output ----
+
+output = {
+    "posts": posts,
+    "emojis": emoji_stats
+}
 
 with open("posts.json", "w", encoding="utf-8") as f:
-    json.dump(posts, f, indent=2, ensure_ascii=False)
+    json.dump(output, f, indent=2, ensure_ascii=False)
 
-print(f"Exported {len(posts)} posts")
+print("Done")
