@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Xorpingtonian</title>
+  <style>
+    body { font-family: Arial; max-width: 700px; margin: auto; }
+    .emoji { cursor: pointer; font-size: 22px; margin: 5px; }
+    .emoji.active { background: #eee; border-radius: 5px; }
+    .post { border-bottom: 1px solid #ddd; padding: 10px 0; }
+  </style>
+</head>
+<body>
+
+  <h1>Xorpingtonian</h1>
+  <h3>The mirror of Telegram Channel</h3>
+  <a href="https://t.me/xorping">Open in Telegram</a>
+
+<div id="filters"></div>
+<div id="posts"></div>
+
+<script>
+let allPosts = [];
+let activeFilters = new Set();
+
+fetch('posts.json')
+  .then(res => res.json())
+  .then(data => {
+    allPosts = data.sort((a,b) => new Date(b.date) - new Date(a.date));
+    renderFilters();
+    renderPosts();
+  });
+
+function renderFilters() {
+  const emojis = [...new Set(allPosts.flatMap(p => p.emojis))];
+  const container = document.getElementById('filters');
+  container.innerHTML = '';
+
+  emojis.forEach(e => {
+    const span = document.createElement('span');
+    span.textContent = e;
+    span.className = 'emoji';
+
+    span.onclick = () => {
+      if (activeFilters.has(e)) {
+        activeFilters.delete(e);
+        span.classList.remove('active');
+      } else {
+        activeFilters.add(e);
+        span.classList.add('active');
+      }
+      renderPosts();
+    };
+
+    container.appendChild(span);
+  });
+}
+
+function renderPosts() {
+  const container = document.getElementById('posts');
+  container.innerHTML = '';
+
+  const posts = activeFilters.size === 0
+    ? allPosts
+    : allPosts.filter(p =>
+        [...activeFilters].every(f => p.emojis.includes(f))
+      );
+
+  posts.forEach(p => {
+    const div = document.createElement('div');
+    div.className = 'post';
+    div.innerHTML = `
+      <div>${p.text}</div>
+      <small>${p.date}</small>
+    `;
+    container.appendChild(div);
+  });
+}
+</script>
+
+<footer>
+  <p>
+    &copy; 2026 Xorpingtonian
+  </p>
+</footer>
+</body>
+</html>
