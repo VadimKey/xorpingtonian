@@ -1,16 +1,10 @@
 import json
 import re, sys
 from collections import Counter
-
-EMOJI_REGEX = re.compile(
-    "[\U0001F1E6-\U0001F1FF]{2}|"  # flags
-    "[\U0001F300-\U0001FAFF]|"
-    "[\U00002700-\U000027BF]",
-    flags=re.UNICODE
-)
+import emoji
 
 def extract_emojis(text):
-    return EMOJI_REGEX.findall(text)
+    return [e['emoji'] for e in emoji.emoji_list(text)]
 
 src = sys.argv[1]
 

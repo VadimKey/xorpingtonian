@@ -236,20 +236,6 @@ function renderFilters() {
             span.title = `${count} posts`;
         }
         container.appendChild(span);
-
-      /*
-  {
-      if (activeFilters.has(emoji)) {
-        activeFilters.delete(emoji);
-        span.classList.remove('active');
-      } else {
-        activeFilters.add(emoji);
-        span.classList.add('active');
-      }
-      renderPosts();
-      };
-      */
-
   });
 }
 
@@ -294,26 +280,6 @@ function renderPosts() {
   });
 }
 
-function renderPostsOld() {
-  const container = document.getElementById('posts');
-  container.innerHTML = '';
-
-  const posts = activeFilters.size === 0
-    ? allPosts
-    : allPosts.filter(p =>
-        [...activeFilters].every(f => p.emojis.includes(f))
-      );
-
-  posts.forEach(p => {
-    const div = document.createElement('div');
-    div.className = 'post';
-    div.innerHTML = `
-      <div>${p.text}</div>
-      <small>&mdash; <a href="${p.url}" target="_blank">${p.date}</a></small>
-    `;
-    container.appendChild(div);
-  });
-}
 </script>
 
 <footer>
