@@ -309,11 +309,19 @@ function renderFilters() {
   const min = Math.min(...counts);
 
   function getSize(count) {
-    const normalized = (count - min) / (max - min || 1);
+      const baseMin = 14;
+      const baseMax = 48;
 
-    if (normalized > 0.75) return '48px';
-    if (normalized > 0.50) return '32px';
-    return '16px';
+      const normalized = (count - min) / (max - min || 1);
+
+      let size = baseMin + normalized * (baseMax - baseMin);
+
+      // mobile scaling
+      if (window.innerWidth < 700) {
+          size *= 0.9;
+      }
+
+      return size + 'px';
   }
 
   const container = document.getElementById('filters');
