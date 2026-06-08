@@ -3,197 +3,301 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  
   <title>Xorpingtonian</title>
+
   <style>
     body {
-        font-family: Arial;
-        max-width: 700px;
-        margin: auto;
-        padding: 0 10px;
+      font-family: Arial;
+      max-width: 700px;
+      margin: auto;
+      padding: 0 10px;
     }
-    
-    .emoji { cursor: pointer; font-size: 22px; margin: 5px; }
+
+    h1 { margin-bottom: 5px; }
+
+    .emoji {
+      cursor: pointer;
+      font-size: 22px;
+      margin: 5px;
+      display: inline-block;
+    }
+
     .emoji.active {
-        background: #ddd;
-        border-radius: 6px;
-        padding: 2px 6px;
-        transform: scale(1.2)
+      background: #ddd;
+      border-radius: 6px;
+      padding: 2px 6px;
+      transform: scale(1.2);
     }
-    .post { border-bottom: 1px solid #ddd; padding: 14px 0; }
 
     #filters {
-        line-height: 2.2em;
-        word-wrap: break-word;
+      line-height: 2.2em;
+      margin-bottom: 10px;
     }
 
     #resetBtn {
-        margin-bottom: 10px;
-        padding: 5px 10px;
-        cursor: pointer;
+      margin-bottom: 10px;
+      padding: 5px 10px;
+      cursor: pointer;
+    }
+
+    .post {
+      border-bottom: 1px solid #ddd;
+      padding: 10px 0;
     }
 
     .post-emoji {
-        cursor: pointer;
-        margin-right: 5px;
+      cursor: pointer;
+      margin-right: 5px;
     }
 
     .post-emoji:hover {
-        background: #eee;
-        border-radius: 4px;
+      background: #eee;
+      border-radius: 4px;
     }
 
+    /* Tree */
+    #posts details {
+      margin-left: 10px;
+      margin-top: 6px;
+    }
+
+    #posts summary {
+      cursor: pointer;
+      font-weight: bold;
+      margin-top: 6px;
+    }
+
+    #posts summary.year {
+        font-size: 20px;
+        font-weight: bold;
+    }
+
+    #posts summary.month {
+        font-size: 16px;
+        font-weight: normal;
+    }
+
+    .month-posts {
+      margin-left: 15px;
+      border-left: 2px solid #eee;
+      padding-left: 10px;
+    }
+
+    #resetBtn {
+        width: 20%;
+        font-size: 22px;
+        padding: 10px;
+      }
+
+      #orderBtn {
+        width: 20%;
+        font-size: 22px;
+        padding: 10px;
+      }
+
     @media (max-width: 700px) {
+      body { max-width: 100%; padding: 0 12px; }
 
-  body {
-    max-width: 100%;
-    padding: 0 12px;   /* small side spacing */
-  }
+      .post { font-size: 18px; }
 
-  h1 {
-    font-size: 22px;
-  }
+      .emoji {
+        font-size: 26px !important;
+        margin: 6px;
+      }
 
-  .post {
-    font-size: 18px;   /* bigger readable text */
-  }
+      #resetBtn {
+        width: 47%;
+        font-size: 22px;
+        padding: 14px;
+      }
 
-  .emoji {
-    font-size: 26px !important;  /* override bucket sizes */
-    margin: 6px;
-  }
-
-  .post-emoji {
-    font-size: 22px;
-  }
-
-  #resetBtn {
-    width: 100%;
-    font-size: 32px;
-    padding: 20px;
-    margin-bottom: 12px;
-  }
-
-}
+      #orderBtn {
+        width: 47%;
+        font-size: 22px;
+        padding: 14px;
+      }
+    }
   </style>
 </head>
+
 <body>
 
-  <h1>Xorpingtonian</h1>
-  <h4>The <a href="https://t.me/xorping">Telegram channel</a> mirror</h4>
+<h1>Xorpingtonian</h1>
+<h4>The <a href="https://t.me/xorping">Telegram channel</a> mirror</h4>
 
-  <h2>Topics</h2>
-  <div id="filters"></div>
-  <button id="resetBtn">Reset</button>
-  <h2>Posts</h2>
-  <div id="posts"></div>
+<h2>Topics</h2>
+<div id="filters"></div>
+
+<button id="resetBtn">Reset</button> <button id="orderBtn">Reverse</button>
+
+<h2>Posts</h2>
+<div id="posts"></div>
 
 <script>
+let sortDesc = true;
+  
 const emojiTooltips = {
-    "🇬🇧": "UK related topics",
-    "🥾": "Hiking",
-    "🛠": "DIY",
-    "🧑‍💻": "Programming",
-    "🇫🇷": "France and French language",
-    "🎥": "Movies watched",
-    "🔈": "Podcasts listened",
-    "🏴󠁧󠁢󠁥󠁮󠁧󠁿": "England",
-    "🎿": "Skiing (Nordic)",
-    "🍇": "Vine growing",
-    "🍎": "Apples growing",
-    "🇪🇪": "Estonia",
-    "📚": "Books review",
-    "🇷🇺": "Russia related",
-    "🎹": "Piano"
+  "🇬🇧": "UK related topics",
+  "🥾": "Hiking",
+  "🛠": "DIY",
+  "🧑‍💻": "Programming",
+  "🇫🇷": "France and French language",
+  "🎥": "Movies watched",
+  "🔈": "Podcasts listened",
+  "🏴": "England",
+  "🎿": "Skiing (Nordic)",
+  "🍇": "Vine growing",
+  "🍎": "Apples growing",
+  "🇪🇪": "Estonia",
+  "📚": "Books review",
+  "🇷🇺": "Russia related",
+  "🎹": "Piano"
 };
 
 let allPosts = [];
 let activeFilters = new Set();
 
-  fetch('posts.json')
-  .then(res => res.json())
+document.getElementById('orderBtn').onclick = () => {
+  sortDesc = !sortDesc;
+  renderPosts();
+};
+
+/* ---------- LOAD ---------- */
+
+fetch('posts.json')
+  .then(r => r.json())
   .then(data => {
     allPosts = data.posts.sort(
       (a, b) => new Date(b.date) - new Date(a.date)
     );
 
-      renderFilters();
-
-      // Apply URL filters AFTER filters are rendered
-      const initialFilters = getFiltersFromURL();
-      initialFilters.forEach(emoji => {
-      activeFilters.add(emoji);
-
-      // highlight matching filter element
-      const el = [...document.querySelectorAll('.emoji')]
-        .find(e => e.textContent.startsWith(emoji));
-
-      if (el) el.classList.add('active');
-    });
-
+    renderFilters();
     renderPosts();
   });
 
+/* ---------- RESET ---------- */
+
 document.getElementById('resetBtn').onclick = () => {
   activeFilters.clear();
+  document.querySelectorAll('.emoji')
+    .forEach(e => e.classList.remove('active'));
 
-  // remove highlight from all emojis
-  document.querySelectorAll('.emoji').forEach(e =>
-    e.classList.remove('active')
-  );
-
-  updateURL();
   renderPosts();
 };
 
-function getFiltersFromURL() {
-  const params = new URLSearchParams(window.location.search);
-  const tags = params.get('tags');
-  return tags ? tags.split(',') : [];
-}
+/* ---------- FILTER ---------- */
 
-function updateURL() {
-  const params = new URLSearchParams();
-
-  if (activeFilters.size > 0) {
-    params.set('tags', [...activeFilters].join(','));
-  }
-
-  const newUrl = window.location.pathname +
-    (params.toString() ? '?' + params.toString() : '');
-
-  window.history.replaceState({}, '', newUrl);
-}
-
-function toggleFilter(emoji, element = null) {
+function toggleFilter(emoji, el = null) {
   if (activeFilters.has(emoji)) {
     activeFilters.delete(emoji);
-    if (element) element.classList.remove('active');
+    if (el) el.classList.remove('active');
   } else {
     activeFilters.add(emoji);
-    if (element) element.classList.add('active');
+    if (el) el.classList.add('active');
   }
-
-  updateURL();
   renderPosts();
-}
- 
-function toggleFilterOld(emoji, element = null) {
-  if (activeFilters.has(emoji)) {
-    activeFilters.delete(emoji);
-    if (element) element.classList.remove('active');
-  } else {
-    activeFilters.add(emoji);
-    if (element) element.classList.add('active');
-  }
+};
 
-  renderPosts();
+/* ---------- BUILD TREE ---------- */
+
+function buildTree(posts) {
+  const tree = {};
+
+  posts.forEach(p => {
+    const [y, m] = p.date.split('-');
+
+    tree[y] ??= {};
+    tree[y][m] ??= [];
+    tree[y][m].push(p);
+  });
+
+  return tree;
 }
 
+/* ---------- RENDER POSTS ---------- */
+
+function renderPosts() {
+  const container = document.getElementById('posts');
+  container.innerHTML = '';
+
+  const posts = allPosts.filter(p =>
+    activeFilters.size === 0 ||
+    [...activeFilters].every(f => p.emojis.includes(f))
+  );
+
+  const tree = buildTree(posts);
+
+  Object.keys(tree).sort((a, b) => sortDesc ? b - a : a - b).forEach(year => {
+
+    const yearEl = document.createElement('details');
+    yearEl.open = true;
+
+    const yearSummary = document.createElement('summary');
+    yearSummary.textContent = year;
+    yearSummary.className = 'year';
+    yearEl.appendChild(yearSummary);
+
+    Object.keys(tree[year]).sort((a, b) => sortDesc ? b - a : a - b).forEach(month => {
+
+      const monthEl = document.createElement('details');
+      monthEl.open = true;
+
+      const monthSummary = document.createElement('summary');
+      monthSummary.textContent = monthName(month);
+      monthSummary.className = 'month';
+      monthEl.appendChild(monthSummary);
+
+      const monthPosts = document.createElement('div');
+      monthPosts.className = 'month-posts';
+
+    tree[year][month]
+    .sort((a, b) => sortDesc
+    ? new Date(b.date) - new Date(a.date)
+    : new Date(a.date) - new Date(b.date))
+    .forEach(p => {
+
+        const div = document.createElement('div');
+        div.className = 'post';
+
+        const emojiHtml = p.emojis.map(e =>
+          `<span class="post-emoji" data-emoji="${e}">${e}</span>`
+        ).join(' ');
+
+        div.innerHTML = `
+          <div>${p.text}</div>
+          <div>${emojiHtml} —
+            <small>
+              <a href="${p.url}" target="_blank">${p.date}</a>
+            </small>
+          </div>
+        `;
+
+        monthPosts.appendChild(div);
+      });
+
+      monthEl.appendChild(monthPosts);
+      yearEl.appendChild(monthEl);
+    });
+
+    container.appendChild(yearEl);
+  });
+
+  document.querySelectorAll('.post-emoji').forEach(el => {
+    el.onclick = () => {
+      const emoji = el.dataset.emoji;
+
+      const filterEl = [...document.querySelectorAll('.emoji')]
+        .find(e => e.textContent.startsWith(emoji));
+
+      toggleFilter(emoji, filterEl);
+    };
+  });
+}
+
+/* ---------- FILTER BAR ---------- */
 function renderFilters() {
   const freq = {};
 
-  // count frequency
   allPosts.forEach(p => {
     p.emojis.forEach(e => {
       freq[e] = (freq[e] || 0) + 1;
@@ -212,79 +316,41 @@ function renderFilters() {
     return '16px';
   }
 
-  // convert to array and sort
-  const emojis = Object.entries(freq)
-    .sort((a, b) => b[1] - a[1]); // descending
-
   const container = document.getElementById('filters');
   container.innerHTML = '';
 
-    emojis.forEach(([emoji, count], index) => {
-        if (count < 3) return;
+  Object.entries(freq)
+    .sort((a, b) => b[1] - a[1])
+    .forEach(([emoji, count]) => {
 
-        const span = document.createElement('span');
-        span.textContent = `${emoji}`;
-        span.className = 'emoji';
-        span.style.fontSize = getSize(count);
-        span.onclick = () => toggleFilter(emoji, span);
+      if (count < 3) return;
 
-        if (emojiTooltips[emoji]) {
-            span.title = `${emojiTooltips[emoji]} (${count})`;
-        }
-        else {
-            span.title = `${count} posts`;
-        }
-        container.appendChild(span);
-  });
+      const span = document.createElement('span');
+      span.textContent = emoji;
+      span.className = 'emoji';
+
+      span.style.fontSize = getSize(count);
+
+      span.onclick = () => toggleFilter(emoji, span);
+
+      span.title = emojiTooltips[emoji]
+        ? `${emojiTooltips[emoji]} (${count})`
+        : `${count} posts`;
+
+      container.appendChild(span);
+    });
 }
 
-function renderPosts() {
-  const container = document.getElementById('posts');
-  container.innerHTML = '';
+/* ---------- MONTH NAME ---------- */
 
-  const posts = activeFilters.size === 0
-    ? allPosts
-    : allPosts.filter(p =>
-        [...activeFilters].every(f => p.emojis.includes(f))
-      );
-
-  posts.forEach(p => {
-    const div = document.createElement('div');
-    div.className = 'post';
-
-    // render emojis as clickable
-    const emojiHtml = p.emojis.map(e =>
-      `<span class="post-emoji" data-emoji="${e}">${e}</span>`
-    ).join(' ');
-
-    div.innerHTML = `
-      <div>${p.text}</div>
-      <div>${emojiHtml}&ndash; <small><a href="${p.url}" title="Open in Telegram" target="_blank">${p.date}</a></small><br>
-    `;
-
-    container.appendChild(div);
-  });
-
-  // attach click handlers AFTER render
-  document.querySelectorAll('.post-emoji').forEach(el => {
-    el.onclick = () => {
-      const emoji = el.dataset.emoji;
-
-      // also highlight in filter bar if exists
-      const filterEl = [...document.querySelectorAll('.emoji')]
-        .find(e => e.textContent.startsWith(emoji));
-
-      toggleFilter(emoji, filterEl);
-    };
-  });
+function monthName(m) {
+  return [
+    '',
+    'January','February','March','April','May','June',
+    'July','August','September','October','November','December'
+  ][parseInt(m)];
 }
-
 </script>
 
-<footer>
-  <p>
-    &copy; 2026 Xorpingtonian
-  </p>
-</footer>
 </body>
 </html>
